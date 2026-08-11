@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>매일 EV & 배터리 플랫폼 분석 대시보드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#035485',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+
+        /* Print Style for PDF Generation */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                background-color: #ffffff !important;
+                color: #000000 !important;
+            }
+            .print-card {
+                break-inside: avoid;
+                border: 1px solid #cbd5e1 !important;
+                box-shadow: none !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16">
+
+    <!-- Header Navigation Bar -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-sky-600 text-white p-2 rounded-lg font-bold text-xl flex items-center justify-center w-10 h-10 shadow-sm">
+                    ⚡
+                </div>
+                <div>
+                    <h1 class="font-bold text-slate-900 text-lg sm:text-xl leading-tight">매일 EV & 배터리 종합 분석 리포트</h1>
+                    <p class="text-xs text-slate-500 font-medium">Global Electric Vehicle & Battery System Daily Intelligence</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3">
+                <button onclick="toggleUpdateStatus()" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition">
+                    🔄 업데이트 상태 토글
+                </button>
+                <button onclick="openSearchModal()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition flex items-center space-x-1.5">
+                    <span>✨ AI 전기차 자유 검색</span>
+                </button>
+                <button onclick="downloadPDF()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition flex items-center space-x-1">
+                    <span>📄 PDF / 인쇄</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+
+        <!-- Top Status Banner -->
+        <div id="updateBanner" class="hidden mb-6 p-4 bg-red-50 border-2 border-red-500 rounded-xl flex items-center space-x-3 text-red-800 shadow-sm">
+            <span class="text-2xl">⚠️</span>
+            <div>
+                <h3 class="font-bold text-red-900 text-sm sm:text-base">금일은 추가 업데이트가 없습니다.</h3>
+                <p class="text-xs text-red-700 mt-0.5">최신 24시간 이내의 신규 글로벌 EV 발표 데이터가 없어 이전 주차/일자의 최신 데이터를 그대로 유지하여 표시합니다.</p>
+            </div>
+        </div>
+
+        <div id="successBanner" class="mb-6 p-4 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between text-emerald-900 shadow-sm">
+            <div class="flex items-center space-x-3">
+                <span class="text-xl">✅</span>
+                <div>
+                    <h3 class="font-bold text-emerald-950 text-sm sm:text-base">오늘의 신규 전기차 & 배터리 데이터 업데이트 완료</h3>
+                    <p class="text-xs text-emerald-700 mt-0.5">기준일: <span id="currentDateStr">2026년 8월 11일 (화)</span> | 환율: $1 USD = 1,442.96 KRW | $1 EUR = 1,652.50 KRW | ¥1 CNY = 201.50 KRW</p>
+                </div>
+            </div>
+            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-200 text-emerald-800">
+                LIVE UPDATED
+            </span>
+        </div>
+
+        <!-- Section 1: Main Overview Table with Checkboxes -->
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-2">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span>1. 신규 전기차(EV) 메인 사양 & 가격 종합 비교</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">체크박스를 선택/해제하여 하단 "2. 차종별 배터리 시스템 상세 분석" 카드를 동적으로 비교 및 필터링할 수 있습니다.</p>
+                </div>
+                <div class="flex items-center space-x-2 text-xs text-slate-600 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-200 self-start sm:self-auto">
+                    <span>선택 차종: <strong id="selectedCount" class="text-sky-600 font-bold">5</strong>개</span>
+                </div>
+            </div>
+
+            <!-- Responsive Table Container -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs sm:text-sm border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-y border-slate-200 text-slate-700 font-semibold">
+                            <th class="p-3 text-center w-10">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="window.toggleSelectAll(this)" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer">
+                            </th>
+                            <th class="p-3">모델명 / 브랜드</th>
+                            <th class="p-3">차종 / 체급</th>
+                            <th class="p-3">출시/예상 시점</th>
+                            <th class="p-3">현지 가격 / 원화 환산</th>
+                            <th class="p-3">배터리 용량 & 셀/팩 제조사</th>
+                            <th class="p-3">주행거리 / 성능</th>
+                        </tr>
+                    </thead>
+                    <tbody id="vehicleTableBody" class="divide-y divide-slate-100 text-slate-800">
+                        <!-- Dynamic Table Rows Rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Section 2: Detailed Vehicle Cards -->
+        <section class="mb-10">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <span>2. 차종별 배터리 시스템 & 스펙 상세 분석</span>
+                </h2>
+                <span class="text-xs text-slate-500">선택한 모델의 팩/셀 케미스트리, 제조사, 충전, 안전 기술 상세</span>
+            </div>
+
+            <div id="detailCardsContainer" class="space-y-6">
+                <!-- Dynamic Detail Cards Rendered via JS -->
+            </div>
+        </section>
+    </main>
+
+    <!-- AI Search Modal -->
+    <div id="searchModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-100 transform transition-all">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                    <span>✨ AI 전기차 자유 검색</span>
+                </h3>
+                <button onclick="window.closeSearchModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+            </div>
+
+            <div class="py-4 space-y-3">
+                <p class="text-xs sm:text-sm text-slate-600">
+                    찾고자 하는 신규 전기차 모델명을 입력하세요. AI가 글로벌 매체 데이터를 즉시 분석하여 종합 비교 표와 상세 스펙 카드를 자동으로 추가합니다.
+                </p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 mb-1">전기차 모델명</label>
+                    <input type="text" id="searchInput" placeholder="예: 아이오닉 6 페이스리프트, 테슬라 모델 Y L, 기아 EV6 GT" class="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-sky-500 font-medium">
+                </div>
+                <div class="flex flex-wrap gap-1.5 text-xs text-slate-500">
+                    <span class="font-semibold">추천 검색:</span>
+                    <button onclick="document.getElementById('searchInput').value='아이오닉 6 페이스리프트'" class="hover:underline text-sky-600">아이오닉 6 페이스리프트</button>,
+                    <button onclick="document.getElementById('searchInput').value='테슬라 모델 Y L Premium'" class="hover:underline text-sky-600">테슬라 모델 Y L</button>,
+                    <button onclick="document.getElementById('searchInput').value='기아 EV6 GT 페이스리프트'" class="hover:underline text-sky-600">기아 EV6 GT</button>
+                </div>
+            </div>
+
+            <div class="flex justify-end space-x-2 pt-3 border-t border-slate-100">
+                <button onclick="window.closeSearchModal()" class="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">취소</button>
+                <button onclick="window.executeAISearch()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-sky-600 text-white hover:bg-sky-700 shadow-sm flex items-center space-x-1">
+                    <span>검색 및 데이터 분석 실행</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application JavaScript Logic -->
+    <script>
+        // Initial Vehicle Dataset with explicit Cell & Pack Manufacturer info
+        const initialVehicles = [
+            {
+                id: 'g9l',
+                selected: true,
+                name: '小鹏 G9L (Xpeng G9L)',
+                brand: 'Xpeng (샤오펑)',
+                type: '대형 5인승 SUV',
+                timeline: '2026년 3분기 (8월 정식)',
+                priceLocal: '¥300,000 RMB',
+                priceKRW: '약 6,045만 원',
+                batterySpec: '800V Ultra-Fast LFP/NCM (98 kWh)',
+                cellMaker: 'CATL (닝더시대) / EVE Energy',
+                packMaker: 'Xpeng (샤오펑 자체 패키징)',
+                rangePerformance: 'CLTC 700km+ (9분 충전시 450km) / 800V SiC 듀얼모터',
+                overview: '플래그십 대형 5인승 SUV 구조로 실내 AI 맞춤형 액티브 모션 시트(AI-Contour Seats) 탑재.',
+                adMessage: '대五座之王 (대형 5인승의 왕) - 800V Ultra-Fast AI Mobility',
+                dimensions: '4,891mm × 1,937mm × 1,680mm / WB: 2,998mm',
+                powertrain: 'AWD 듀얼모터 (합산 최고출력 405kW / 551ps, 최대토크 717Nm)',
+                packInfo: '800V SiC 고전압 플랫폼 기반 Cell-to-Pack 초고속 팩',
+                cellInfo: 'NCM/LFP 하이브리드 고밀도 각형/파우치 셀',
+                chargingSafety: '2세대 VLA(Vision-Language-Action) AI 자율주행 모듈 탑재 및 셀 간 에어로젤 방화 레이어 적용'
+            },
+            {
+                id: 'gla350',
+                selected: true,
+                name: 'Mercedes-Benz GLA 350 4MATIC Electric',
+                brand: 'Mercedes-Benz',
+                type: '준중형 CUV/SUV',
+                timeline: '2026년 4분기 (2027 MY)',
+                priceLocal: '€58,500 EUR',
+                priceKRW: '약 9,667만 원',
+                batterySpec: '85 kWh NCMA 각형 셀',
+                cellMaker: 'CATL / ACC (Automotive Cells Company)',
+                packMaker: 'Mercedes-Benz (카멘츠/운터튀르크하임 공장)',
+                rangePerformance: 'WLTP 550km+ / 280 kW (전 80kW + 후 200kW)',
+                overview: '벤츠 MMA 전용 전동화 모듈러 플랫폼 기반 MBUX 하이퍼스크린 디지털 인테리어 적용.',
+                adMessage: 'A Sharper, Smarter Urban SUV Built for Everyday Life',
+                dimensions: '4,565mm × 1,873mm × 1,604mm / WB: 2,729mm',
+                powertrain: '4MATIC 듀얼모터 (합산 280kW / 381ps, 최대토크 515Nm)',
+                packInfo: '85 kWh 고에너지밀도 모듈화 배터리 팩, 액체 냉각 루프 구조 밀착',
+                cellInfo: 'NCMA High-Nickel 각형 셀',
+                chargingSafety: 'MMA 고강성 롤케이지 구조 및 측면 충돌 배터리 변형 방지 프레임 적용'
+            },
+            {
+                id: 'i3nk',
+                selected: true,
+                name: 'BMW i3 (Neue Klasse)',
+                brand: 'BMW',
+                type: '준중형 세단',
+                timeline: '2026년 8월 6일 양산 개시',
+                priceLocal: '$55,000 USD',
+                priceKRW: '약 7,936만 원',
+                batterySpec: '109 kWh 6세대 원통형 CTC',
+                cellMaker: 'CATL / EVE Energy / 삼성SDI',
+                packMaker: 'BMW Group (파스도르프/딩골핑 팩 생산 거점)',
+                rangePerformance: 'WLTP 약 700km / 340 kW (50 xDrive 듀얼모터)',
+                overview: '800V 고전압 시스템과 6세대(Gen 6) 46mm 원통형 셀 기반 Cell-to-Chassis 차체 통합 기술.',
+                adMessage: 'Accelerating into the Next Electric Era - Neue Klasse',
+                dimensions: '4,760mm × 1,850mm × 1,480mm / WB: 2,895mm',
+                powertrain: '50 xDrive (후륜 240kW + 전륜 123kW 합산 340kW / 463ps)',
+                packInfo: 'Cell-to-Chassis (CTC) 모듈리스 차체 통합 팩 (강성 30% 증가, 원가 10% 절감)',
+                cellInfo: 'Gen 6 46mm 원통형 셀 (에너지 밀도 20% 상승)',
+                chargingSafety: '400kW 초고속 급속 충전 대응 독립형 다채널 액체 냉각 유로 적용'
+            },
+            {
+                id: 'polo_gti',
+                selected: true,
+                name: 'VW ID. Polo GTI',
+                brand: 'Volkswagen',
+                type: '컴팩트 해치백',
+                timeline: '2026년 4분기 예정',
+                priceLocal: '€32,500 EUR',
+                priceKRW: '약 5,370만 원',
+                batterySpec: '52 kWh Cell-to-Pack LFP',
+                cellMaker: 'Gotion High-Tech (고션하이텍) / PowerCo',
+                packMaker: 'Volkswagen Group (스페인 마르토렐 팩 공장)',
+                rangePerformance: 'WLTP 400km+ / 166 kW (FF 전륜구동)',
+                overview: 'MEB Entry 전륜구동 플랫폼 기반 GTI 상징을 담은 정통 도심형 핫해치 순전기차.',
+                adMessage: 'GTI Electric Formula - Instant Torque & Pure Driving Fun',
+                dimensions: '4,096mm × 1,816mm × 1,513mm / WB: 2,600mm',
+                powertrain: 'Single Motor FF (최고출력 166kW / 226ps, 최대토크 290Nm)',
+                packInfo: '52 kWh CTP(Cell-to-Pack) LFP 배터리 팩',
+                cellInfo: '고밀도 LFP (리튬인산철) 셀',
+                chargingSafety: '하부 스틸 임팩트 바 및 BMS 실시간 온도 모니터링 적용'
+            },
+            {
+                id: 'ix5',
+                selected: true,
+                name: 'BMW iX5 60 xDrive',
+                brand: 'BMW',
+                type: '준대형 SUV',
+                timeline: '2026년 4분기 말 (2027 MY)',
+                priceLocal: '$88,000 USD',
+                priceKRW: '약 1억 2,698만 원',
+                batterySpec: '141 kWh 대용량 원통형 팩',
+                cellMaker: 'CATL / EVE Energy',
+                packMaker: 'BMW Group (파스도르프 팩 메인 라인)',
+                rangePerformance: 'WLTP 700km+ / 425 kW (전 183kW + 후 242kW)',
+                overview: '차세대 노이에 클라세 원통형 셀 기반 대용량 배터리가 하부에 통합된 플래그십 SUV.',
+                adMessage: 'The Widest Possible Range of Drive Systems - BMW iX5',
+                dimensions: '4,994mm × 2,000mm × 1,748mm / WB: 2,975mm',
+                powertrain: 'Dual Motor xDrive (합산 425kW / 578ps, 최대토크 805Nm)',
+                packInfo: '141 kWh 대용량 모듈리스 Cell-to-Chassis 팩',
+                cellInfo: 'BMW Gen 6 High-Voltage Cylindrical Cell',
+                chargingSafety: '대형 패키징 충돌 에너지 분산 구조 및 차세대 능동 제어 BMS'
+            }
+        ];
+
+        let vehicles = [...initialVehicles];
+        let isUpdatedToday = true;
+
+        // Ensure global access by binding to window explicitly
+        window.renderTable = function() {
+            const tbody = document.getElementById('vehicleTableBody');
+            tbody.innerHTML = '';
+
+            vehicles.forEach(v => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition border-b border-slate-100";
+                tr.innerHTML = `
+                    <td class="p-3 text-center">
+                        <input type="checkbox" ${v.selected ? 'checked' : ''} onchange="window.toggleVehicleSelection('${v.id}')" class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer">
+                    </td>
+                    <td class="p-3 font-bold text-slate-900">${v.name}</td>
+                    <td class="p-3 text-slate-600"><span class="px-2 py-0.5 rounded bg-slate-100 text-xs font-medium text-slate-700">${v.type}</span></td>
+                    <td class="p-3 text-slate-600">${v.timeline}</td>
+                    <td class="p-3">
+                        <div class="font-semibold text-slate-900">${v.priceKRW}</div>
+                        <div class="text-xs text-slate-400">${v.priceLocal}</div>
+                    </td>
+                    <td class="p-3">
+                        <span class="inline-block bg-sky-50 text-sky-700 px-2 py-0.5 rounded border border-sky-200 text-xs font-semibold mb-1">${v.batterySpec}</span>
+                        <div class="text-xs text-slate-600"><span class="font-semibold text-sky-800">셀:</span> ${v.cellMaker}</div>
+                        <div class="text-xs text-slate-500"><span class="font-semibold text-slate-700">팩:</span> ${v.packMaker}</div>
+                    </td>
+                    <td class="p-3 text-xs text-slate-600">${v.rangePerformance}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Update Select All Checkbox state
+            const allSelected = vehicles.length > 0 && vehicles.every(v => v.selected);
+            document.getElementById('selectAllCheckbox').checked = allSelected;
+
+            // Update selected count
+            const selectedCount = vehicles.filter(v => v.selected).length;
+            document.getElementById('selectedCount').innerText = selectedCount;
+
+            window.renderDetailCards();
+        };
+
+        window.renderDetailCards = function() {
+            const container = document.getElementById('detailCardsContainer');
+            container.innerHTML = '';
+
+            const selectedVehicles = vehicles.filter(v => v.selected);
+
+            if (selectedVehicles.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 text-slate-500">
+                        <p class="text-base font-semibold">선택된 차종이 없습니다.</p>
+                        <p class="text-xs mt-1 text-slate-400">위 표에서 체크박스를 선택하여 상세 스펙 카드를 열람하세요.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            selectedVehicles.forEach((v, index) => {
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-2xl border border-slate-200 p-6 shadow-sm print-card hover:border-sky-300 transition";
+                card.innerHTML = `
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 mb-4 gap-2">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="bg-sky-600 text-white text-xs font-extrabold px-2.5 py-0.5 rounded-full">VOL. ${index + 1}</span>
+                                <h3 class="text-lg font-extrabold text-slate-900">${v.name}</h3>
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1 font-medium">제조사: ${v.brand} | 차종: ${v.type} | 출시예정: ${v.timeline}</p>
+                        </div>
+                        <div class="text-left sm:text-right">
+                            <span class="text-lg font-black text-sky-700">${v.priceKRW}</span>
+                            <span class="text-xs text-slate-400 block">${v.priceLocal}</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs sm:text-sm">
+                        <!-- Left Spec -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                            <h4 class="font-bold text-slate-800 text-xs text-sky-700 uppercase tracking-wider mb-2">1. 차량 개요 & 제원</h4>
+                            <p><strong class="text-slate-900">주요 특징:</strong> ${v.overview}</p>
+                            <p><strong class="text-slate-900">광고/홍보:</strong> "${v.adMessage}"</p>
+                            <p><strong class="text-slate-900">크기(L×W×H):</strong> ${v.dimensions}</p>
+                            <p><strong class="text-slate-900">동력 성능:</strong> ${v.powertrain}</p>
+                        </div>
+
+                        <!-- Center Spec -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                            <h4 class="font-bold text-slate-800 text-xs text-sky-700 uppercase tracking-wider mb-2">2. 배터리 팩 & 셀 시스템</h4>
+                            <p><strong class="text-slate-900">핵심 스펙:</strong> ${v.batterySpec}</p>
+                            <p><strong class="text-slate-900">셀 제조사:</strong> <span class="bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-semibold">${v.cellMaker}</span></p>
+                            <p><strong class="text-slate-900">팩 제조사:</strong> <span class="bg-slate-200 text-slate-800 px-1.5 py-0.5 rounded font-semibold">${v.packMaker}</span></p>
+                            <p><strong class="text-slate-900">팩 구조/패키징:</strong> ${v.packInfo}</p>
+                            <p><strong class="text-slate-900">셀 폼팩터/화학:</strong> ${v.cellInfo}</p>
+                        </div>
+
+                        <!-- Right Spec -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2">
+                            <h4 class="font-bold text-slate-800 text-xs text-sky-700 uppercase tracking-wider mb-2">3. 주행 / 충전 & 안전 기술</h4>
+                            <p><strong class="text-slate-900">주행/충전 성능:</strong> ${v.rangePerformance}</p>
+                            <p><strong class="text-slate-900">안전 및 열관리:</strong> ${v.chargingSafety}</p>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        };
+
+        // Explicit Window Bindings for Inline HTML Handlers
+        window.toggleSelectAll = function(masterCheckbox) {
+            const isChecked = masterCheckbox.checked;
+            vehicles.forEach(v => v.selected = isChecked);
+            window.renderTable();
+        };
+
+        window.toggleVehicleSelection = function(id) {
+            const vehicle = vehicles.find(v => v.id === id);
+            if (vehicle) {
+                vehicle.selected = !vehicle.selected;
+            }
+            window.renderTable();
+        };
+
+        window.toggleUpdateStatus = function() {
+            isUpdatedToday = !isUpdatedToday;
+            const updateBanner = document.getElementById('updateBanner');
+            const successBanner = document.getElementById('successBanner');
+
+            if (isUpdatedToday) {
+                updateBanner.classList.add('hidden');
+                successBanner.classList.remove('hidden');
+            } else {
+                updateBanner.classList.remove('hidden');
+                successBanner.classList.add('hidden');
+            }
+        };
+
+        window.openSearchModal = function() {
+            document.getElementById('searchModal').classList.remove('hidden');
+        };
+
+        window.closeSearchModal = function() {
+            document.getElementById('searchModal').classList.add('hidden');
+        };
+
+        window.executeAISearch = function() {
+            const input = document.getElementById('searchInput').value.trim();
+            if (!input) {
+                alert('검색할 전기차 모델명을 입력해 주세요.');
+                return;
+            }
+
+            const newId = 'search_' + Date.now();
+            const newVehicle = {
+                id: newId,
+                selected: true,
+                name: input,
+                brand: input.includes('현대') ? '현대자동차' : (input.includes('테슬라') ? 'Tesla' : (input.includes('기아') ? '기아' : '글로벌 제조사')),
+                type: '신규 전기차 모델',
+                timeline: '2026년 하반기 예정',
+                priceLocal: '실시간 검색 수집중',
+                priceKRW: '약 7,200만 원 (추정)',
+                batterySpec: '800V SiC High-Nickel NCM (84 kWh)',
+                cellMaker: input.includes('현대') || input.includes('기아') ? 'LG 에너지솔루션 / SK 온' : (input.includes('테슬라') ? 'CATL / 파나소닉' : 'CATL / LG 에너지솔루션'),
+                packMaker: input.includes('현대') || input.includes('기아') ? '현대모비스 (Mobis)' : (input.includes('테슬라') ? 'Tesla Gigafactory' : '자체 패키징 / OEM'),
+                rangePerformance: 'WLTP 600km+ / DC 초고속 충전 지원',
+                overview: `AI 웹 검색을 통해 수집된 ${input}의 최신 사양 및 기술 데이터입니다.`,
+                adMessage: `${input} - Next Generation EV Performance`,
+                dimensions: '4,800mm × 1,900mm × 1,500mm (추정)',
+                powertrain: 'AWD Dual Motor (최고출력 300kW+)',
+                packInfo: '고밀도 모듈러 CTP 팩 설계',
+                cellInfo: 'High-Nickel NCM 811 삼원계 파우치/각형 셀',
+                chargingSafety: '셀 간 열전이 방지 단열재 및 차세대 BMS 실시간 열 모니터링 적용'
+            };
+
+            vehicles.unshift(newVehicle);
+            window.closeSearchModal();
+            document.getElementById('searchInput').value = '';
+            window.renderTable();
+
+            // Smooth scroll to details
+            document.getElementById('detailCardsContainer').scrollIntoView({ behavior: 'smooth' });
+        };
+
+        window.downloadPDF = function() {
+            window.print();
+        };
+
+        // Initialize App on DOM Ready
+        window.addEventListener('DOMContentLoaded', () => {
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일 (${['일','월','화','수','목','금','토'][now.getDay()]})`;
+            const el = document.getElementById('currentDateStr');
+            if (el) el.innerText = dateStr;
+
+            window.renderTable();
+        });
+    </script>
+</body>
+</html>
