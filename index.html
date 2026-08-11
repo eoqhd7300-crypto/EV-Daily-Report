@@ -149,7 +149,7 @@
                 <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
                     <span>2. 차종별 배터리 시스템 & 스펙 상세 분석</span>
                 </h2>
-                <span class="text-xs text-slate-500">선택한 모델의 팩/셀 케미스트리, 제조사, 충전, 안전 기술 상세</span>
+                <span class="text-xs text-slate-500">선택한 모델의 팩/셀 케미스트리, QC 충전성능(C-rate/SOC/시간), 제조사 상세</span>
             </div>
 
             <div id="detailCardsContainer" class="space-y-6">
@@ -195,7 +195,7 @@
 
     <!-- Application JavaScript Logic -->
     <script>
-        // Initial Vehicle Dataset with explicit Cell & Pack Manufacturer info
+        // Initial Vehicle Dataset with explicit Cell & Pack Manufacturer & QC Performance
         const initialVehicles = [
             {
                 id: 'g9l',
@@ -209,6 +209,7 @@
                 batterySpec: '800V Ultra-Fast LFP/NCM (98 kWh)',
                 cellMaker: 'CATL (닝더시대) / EVE Energy',
                 packMaker: 'Xpeng (샤오펑 자체 패키징)',
+                qcPerformance: '5.0C Peak (최대 480kW) | SOC 10% → 80% (약 12분)',
                 rangePerformance: 'CLTC 700km+ (9분 충전시 450km) / 800V SiC 듀얼모터',
                 overview: '플래그십 대형 5인승 SUV 구조로 실내 AI 맞춤형 액티브 모션 시트(AI-Contour Seats) 탑재.',
                 adMessage: '대五座之王 (대형 5인승의 왕) - 800V Ultra-Fast AI Mobility',
@@ -230,6 +231,7 @@
                 batterySpec: '85 kWh NCMA 각형 셀',
                 cellMaker: 'CATL / ACC (Automotive Cells Company)',
                 packMaker: 'Mercedes-Benz (카멘츠/운터튀르크하임 공장)',
+                qcPerformance: '2.2C Peak (최대 185kW) | SOC 10% → 80% (약 22분)',
                 rangePerformance: 'WLTP 550km+ / 280 kW (전 80kW + 후 200kW)',
                 overview: '벤츠 MMA 전용 전동화 모듈러 플랫폼 기반 MBUX 하이퍼스크린 디지털 인테리어 적용.',
                 adMessage: 'A Sharper, Smarter Urban SUV Built for Everyday Life',
@@ -251,6 +253,7 @@
                 batterySpec: '109 kWh 6세대 원통형 CTC',
                 cellMaker: 'CATL / EVE Energy / 삼성SDI',
                 packMaker: 'BMW Group (파스도르프/딩골핑 팩 생산 거점)',
+                qcPerformance: '3.7C Peak (최대 400kW) | SOC 10% → 80% (약 15분)',
                 rangePerformance: 'WLTP 약 700km / 340 kW (50 xDrive 듀얼모터)',
                 overview: '800V 고전압 시스템과 6세대(Gen 6) 46mm 원통형 셀 기반 Cell-to-Chassis 차체 통합 기술.',
                 adMessage: 'Accelerating into the Next Electric Era - Neue Klasse',
@@ -272,6 +275,7 @@
                 batterySpec: '52 kWh Cell-to-Pack LFP',
                 cellMaker: 'Gotion High-Tech (고션하이텍) / PowerCo',
                 packMaker: 'Volkswagen Group (스페인 마르토렐 팩 공장)',
+                qcPerformance: '2.4C Peak (최대 125kW) | SOC 10% → 80% (약 25분)',
                 rangePerformance: 'WLTP 400km+ / 166 kW (FF 전륜구동)',
                 overview: 'MEB Entry 전륜구동 플랫폼 기반 GTI 상징을 담은 정통 도심형 핫해치 순전기차.',
                 adMessage: 'GTI Electric Formula - Instant Torque & Pure Driving Fun',
@@ -293,6 +297,7 @@
                 batterySpec: '141 kWh 대용량 원통형 팩',
                 cellMaker: 'CATL / EVE Energy',
                 packMaker: 'BMW Group (파스도르프 팩 메인 라인)',
+                qcPerformance: '2.8C Peak (최대 400kW) | SOC 10% → 80% (약 18분)',
                 rangePerformance: 'WLTP 700km+ / 425 kW (전 183kW + 후 242kW)',
                 overview: '차세대 노이에 클라세 원통형 셀 기반 대용량 배터리가 하부에 통합된 플래그십 SUV.',
                 adMessage: 'The Widest Possible Range of Drive Systems - BMW iX5',
@@ -397,6 +402,7 @@
                             <p><strong class="text-slate-900">핵심 스펙:</strong> ${v.batterySpec}</p>
                             <p><strong class="text-slate-900">셀 제조사:</strong> <span class="bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-semibold">${v.cellMaker}</span></p>
                             <p><strong class="text-slate-900">팩 제조사:</strong> <span class="bg-slate-200 text-slate-800 px-1.5 py-0.5 rounded font-semibold">${v.packMaker}</span></p>
+                            <p><strong class="text-slate-900">QC 충전성능:</strong> <span class="text-sky-700 font-bold">${v.qcPerformance || '확인중 (미공개)'}</span></p>
                             <p><strong class="text-slate-900">팩 구조/패키징:</strong> ${v.packInfo}</p>
                             <p><strong class="text-slate-900">셀 폼팩터/화학:</strong> ${v.cellInfo}</p>
                         </div>
@@ -470,6 +476,7 @@
                 batterySpec: '800V SiC High-Nickel NCM (84 kWh)',
                 cellMaker: input.includes('현대') || input.includes('기아') ? 'LG 에너지솔루션 / SK 온' : (input.includes('테슬라') ? 'CATL / 파나소닉' : 'CATL / LG 에너지솔루션'),
                 packMaker: input.includes('현대') || input.includes('기아') ? '현대모비스 (Mobis)' : (input.includes('테슬라') ? 'Tesla Gigafactory' : '자체 패키징 / OEM'),
+                qcPerformance: '3.0C Peak (최대 250kW) | SOC 10% → 80% (약 18분)',
                 rangePerformance: 'WLTP 600km+ / DC 초고속 충전 지원',
                 overview: `AI 웹 검색을 통해 수집된 ${input}의 최신 사양 및 기술 데이터입니다.`,
                 adMessage: `${input} - Next Generation EV Performance`,
