@@ -56,7 +56,7 @@
 
     <!-- Header Navigation Bar -->
     <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm no-print">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2">
             <div class="flex items-center space-x-3">
                 <div class="bg-sky-600 text-white p-2 rounded-lg font-bold text-xl flex items-center justify-center w-10 h-10 shadow-sm">
                     ⚡
@@ -67,14 +67,20 @@
                 </div>
             </div>
 
-            <div class="flex items-center space-x-2 sm:space-x-3">
-                <button onclick="toggleUpdateStatus()" class="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition">
-                    🔄 업데이트 상태 토글
+            <div class="flex items-center space-x-2 sm:space-x-2.5 flex-wrap justify-end">
+                <button onclick="window.openDBModal()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition flex items-center space-x-1">
+                    <span>💾 DB 저장 & 히스토리</span>
                 </button>
-                <button onclick="openSearchModal()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition flex items-center space-x-1.5">
-                    <span>✨ AI 전기차 자유 검색</span>
+                <button onclick="window.exportCSV()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-200 transition flex items-center space-x-1">
+                    <span>📊 CSV 엑셀 추출</span>
                 </button>
-                <button onclick="downloadPDF()" class="px-3.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition flex items-center space-x-1">
+                <button onclick="window.toggleUpdateStatus()" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg border border-slate-300 bg-slate-50 text-slate-700 hover:bg-slate-100 transition">
+                    🔄 토글
+                </button>
+                <button onclick="window.openSearchModal()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-sky-50 text-sky-700 hover:bg-sky-100 border border-sky-200 transition flex items-center space-x-1">
+                    <span>✨ AI 자유 검색</span>
+                </button>
+                <button onclick="window.downloadPDF()" class="px-3 py-1.5 text-xs sm:text-sm font-semibold rounded-lg bg-sky-600 text-white hover:bg-sky-700 shadow-sm transition flex items-center space-x-1">
                     <span>📄 PDF / 인쇄</span>
                 </button>
             </div>
@@ -189,6 +195,71 @@
                 <button onclick="window.executeAISearch()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-sky-600 text-white hover:bg-sky-700 shadow-sm flex items-center space-x-1">
                     <span>검색 및 데이터 분석 실행</span>
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Local Database & History Modal -->
+    <div id="dbModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-slate-900 flex items-center gap-2">
+                        <span>💾 PC 데이터베이스 & 히스토리 관리자</span>
+                    </h3>
+                    <p class="text-xs text-slate-500">내 PC 브라우저에 매일 기록된 대시보드 스냅샷을 열람/복원/비교 및 백업합니다.</p>
+                </div>
+                <button onclick="window.closeDBModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold p-1">✕</button>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div class="py-4 space-y-5 overflow-y-auto flex-1">
+                <!-- Save Snapshot Button Section -->
+                <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div>
+                        <h4 class="font-bold text-emerald-950 text-sm">📌 현재 대시보드 상태를 PC DB에 저장하기</h4>
+                        <p class="text-xs text-emerald-700 mt-0.5">현재 화면의 모든 차종 및 배터리 스펙 데이터를 오늘 날짜의 스냅샷으로 기록합니다.</p>
+                    </div>
+                    <button onclick="window.saveCurrentSnapshot()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm whitespace-nowrap transition">
+                        💾 현재 상태 저장
+                    </button>
+                </div>
+
+                <!-- Saved Snapshot Records History List -->
+                <div>
+                    <h4 class="font-bold text-slate-800 text-sm mb-2.5 flex items-center justify-between">
+                        <span>📋 저장된 일자별 리포트 히스토리</span>
+                        <span id="historyCountTag" class="text-xs font-normal text-slate-500">총 0개 기록</span>
+                    </h4>
+                    <div id="historyListContainer" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        <!-- Dynamic History Records -->
+                    </div>
+                </div>
+
+                <!-- Backup & Restore File Controls -->
+                <div class="border-t border-slate-100 pt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h5 class="font-bold text-xs text-slate-800 mb-1">📥 PC 파일로 전체 DB 백업 (JSON)</h5>
+                        <p class="text-xs text-slate-500 mb-2.5">저장된 모든 날짜별 대시보드 데이터를 `.json` 파일로 저장합니다.</p>
+                        <button onclick="window.exportJSON()" class="w-full py-1.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg transition">
+                            JSON 백업 다운로드
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h5 class="font-bold text-xs text-slate-800 mb-1">📤 JSON DB 파일 불러오기</h5>
+                        <p class="text-xs text-slate-500 mb-2.5">백업해 둔 `.json` 파일을 업로드하여 히스토리를 복원합니다.</p>
+                        <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="window.importJSON(event)">
+                        <button onclick="document.getElementById('importJsonInput').click()" class="w-full py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-semibold rounded-lg transition">
+                            파일 선택 및 복원
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex justify-end pt-3 border-t border-slate-100">
+                <button onclick="window.closeDBModal()" class="px-4 py-2 text-xs font-semibold rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50">닫기</button>
             </div>
         </div>
     </div>
@@ -311,6 +382,7 @@
 
         let vehicles = [...initialVehicles];
         let isUpdatedToday = true;
+        const LOCAL_STORAGE_KEY = 'ev_dashboard_history_db';
 
         // Ensure global access by binding to window explicitly
         window.renderTable = function() {
@@ -498,6 +570,192 @@
 
         window.downloadPDF = function() {
             window.print();
+        };
+
+        // --- Local Database & History Management ---
+        window.getDBHistory = function() {
+            try {
+                const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+                return data ? JSON.parse(data) : [];
+            } catch (e) {
+                console.error("Local storage error:", e);
+                return [];
+            }
+        };
+
+        window.saveDBHistory = function(history) {
+            try {
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(history));
+            } catch (e) {
+                console.error("Failed to save local storage:", e);
+            }
+        };
+
+        window.openDBModal = function() {
+            window.renderHistoryList();
+            document.getElementById('dbModal').classList.remove('hidden');
+        };
+
+        window.closeDBModal = function() {
+            document.getElementById('dbModal').classList.add('hidden');
+        };
+
+        window.saveCurrentSnapshot = function() {
+            const now = new Date();
+            const timeStampStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+            const snapshot = {
+                id: 'snap_' + Date.now(),
+                date: timeStampStr,
+                totalVehicles: vehicles.length,
+                vehiclesData: JSON.parse(JSON.stringify(vehicles))
+            };
+
+            const history = window.getDBHistory();
+            history.unshift(snapshot);
+            window.saveDBHistory(history);
+            window.renderHistoryList();
+
+            alert(`✅ 현재 대시보드 상태가 PC 브라우저 DB에 성공적으로 저장되었습니다.\n(저장 일시: ${timeStampStr})`);
+        };
+
+        window.renderHistoryList = function() {
+            const container = document.getElementById('historyListContainer');
+            const history = window.getDBHistory();
+
+            document.getElementById('historyCountTag').innerText = `총 ${history.length}개 기록 저장됨`;
+            container.innerHTML = '';
+
+            if (history.length === 0) {
+                container.innerHTML = `
+                    <div class="p-4 text-center text-xs text-slate-400 bg-slate-50 rounded-xl border border-slate-200">
+                        저장된 데이터베이스 히스토리가 없습니다. 상단의 '현재 상태 저장' 버튼을 클릭하여 스냅샷을 생성하세요.
+                    </div>
+                `;
+                return;
+            }
+
+            history.forEach(item => {
+                const div = document.createElement('div');
+                div.className = "flex items-center justify-between p-3 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition text-xs";
+                div.innerHTML = `
+                    <div>
+                        <div class="font-bold text-slate-900">${item.date} 리포트 스냅샷</div>
+                        <div class="text-slate-500 text-[11px] mt-0.5">수집 차종: ${item.totalVehicles}개 모델 보유</div>
+                    </div>
+                    <div class="flex items-center space-x-1.5">
+                        <button onclick="window.loadSnapshot('${item.id}')" class="px-2.5 py-1 bg-sky-600 hover:bg-sky-700 text-white font-semibold rounded-md shadow-xs">
+                            대시보드로 불러오기
+                        </button>
+                        <button onclick="window.deleteSnapshot('${item.id}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold rounded-md">
+                            삭제
+                        </button>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        };
+
+        window.loadSnapshot = function(id) {
+            const history = window.getDBHistory();
+            const target = history.find(h => h.id === id);
+
+            if (target && target.vehiclesData) {
+                vehicles = JSON.parse(JSON.stringify(target.vehiclesData));
+                window.renderTable();
+                window.closeDBModal();
+                alert(`📂 ${target.date} 버전의 데이터베이스 스냅샷이 대시보드에 불러와졌습니다.`);
+            }
+        };
+
+        window.deleteSnapshot = function(id) {
+            let history = window.getDBHistory();
+            history = history.filter(h => h.id !== id);
+            window.saveDBHistory(history);
+            window.renderHistoryList();
+        };
+
+        // Export to CSV for Excel/Database Software
+        window.exportCSV = function() {
+            if (vehicles.length === 0) {
+                alert('내보낼 데이터가 존재하지 않습니다.');
+                return;
+            }
+
+            const headers = [
+                '모델명', '브랜드', '차종/체급', '출시/예상시점', '현지가격', '원화환산가격', 
+                '배터리스펙', '셀제조사', '팩제조사', 'QC충전성능', '주행거리성능', 
+                '차량개요', '홍보문구', '차량크기', '동력성능', '팩구조', '셀폼팩터', '안전기술'
+            ];
+
+            const rows = vehicles.map(v => [
+                v.name, v.brand, v.type, v.timeline, v.priceLocal, v.priceKRW,
+                v.batterySpec, v.cellMaker, v.packMaker, v.qcPerformance, v.rangePerformance,
+                v.overview, v.adMessage, v.dimensions, v.powertrain, v.packInfo, v.cellInfo, v.chargingSafety
+            ]);
+
+            // Add UTF-8 BOM so Excel opens Korean text correctly
+            let csvContent = '\uFEFF' + headers.map(h => `"${h}"`).join(',') + '\n';
+            rows.forEach(r => {
+                csvContent += r.map(field => `"${(field || '').toString().replace(/"/g, '""')}"`).join(',') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const now = new Date();
+            const dateStr = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,'0')}${String(now.getDate()).padStart(2,'0')}`;
+            
+            a.href = url;
+            a.download = `EV_Battery_Daily_Report_${dateStr}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        // JSON Export & Import for Database Migration
+        window.exportJSON = function() {
+            const history = window.getDBHistory();
+            const exportData = {
+                exportedAt: new Date().toISOString(),
+                currentVehicles: vehicles,
+                historySnapshots: history
+            };
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `EV_Report_Database_Backup_${Date.now()}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        window.importJSON = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (imported.currentVehicles) {
+                        vehicles = imported.currentVehicles;
+                    }
+                    if (imported.historySnapshots && Array.isArray(imported.historySnapshots)) {
+                        window.saveDBHistory(imported.historySnapshots);
+                    }
+                    window.renderTable();
+                    window.renderHistoryList();
+                    alert('✅ 백업 DB 파일이 성공적으로 복원되었습니다.');
+                } catch (err) {
+                    alert('❌ 올바르지 않은 JSON 데이터 파일 형태입니다.');
+                }
+            };
+            reader.readAsText(file);
         };
 
         // Initialize App on DOM Ready
